@@ -73,6 +73,9 @@ find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5OpenGL)
 
+# dlib
+find_package(dlib)
+
 # Ceres solver
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
@@ -89,5 +92,3 @@ target_link_libraries(FaceGrabber
 
 add_executable(FaceDetection facedetection.cpp)
 target_link_libraries(FaceDetection dlib openblas)
-
-add_subdirectory(dlib)
