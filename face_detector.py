@@ -3,7 +3,6 @@ from scipy.spatial import ConvexHull
 import cv2
 import dlib
 import sys
-import joblib
 import multiprocessing
 
 use_dlib = True
