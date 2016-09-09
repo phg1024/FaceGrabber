@@ -76,6 +76,14 @@ find_package(Qt5OpenGL)
 # dlib
 find_package(dlib)
 
+# CUDA
+find_package(CUDA)
+set(CUDNN_INC /home/phg/SDKs/cudnn-5.1/include)
+set(CUDNN_LIB_PATH /home/phg/SDKs/cudnn-5.1/lib64)
+include_directories(${CUDNN_INC})
+link_directories(${CUDNN_LIB_PATH})
+link_libraries("-lcudnn")
+
 # Ceres solver
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
