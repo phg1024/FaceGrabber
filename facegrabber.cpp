@@ -287,6 +287,11 @@ int main( int argc, char** argv )
         return 1;
     }
     Mat image = imread( filename, 1 );
+
+    // scale the image to 2x
+    const double scale_factor = 2.0;
+    resize(image, image, Size(0, 0), scale_factor, scale_factor);
+
     if( image.empty() )
     {
         cout << "\n Durn, couldn't read image filename " << filename << endl;

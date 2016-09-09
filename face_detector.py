@@ -26,9 +26,9 @@ def detect_face(img, detector=None):
         faces = []
         for i, d in enumerate(dets):
             faces.append([d.left(), d.top(), d.right()-d.left(), d.bottom()-d.top()])
-        return faces
+        return (faces, dets)
     else:
-        return detector.detectMultiScale(img, 1.25, 5)
+        return (detector.detectMultiScale(img, 1.25, 5), None)
 
 if __name__ == '__main__':
     face_detector = create_detector()
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     def proc_image(imgfile):
         print 'processing', imgfile
         img = cv2.imread(imgfile, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        faces = detect_face(img, face_detector)
+        faces, dummy = detect_face(img, face_detector)
         print faces
         if faces is not None:
             with open(imgfile+'.bbox', 'w') as f:
