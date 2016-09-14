@@ -35,6 +35,8 @@ void ImageWidget::paintEvent(QPaintEvent *event) {
 
 void ImageWidget::mousePressEvent(QMouseEvent *event) {
   if (isInteractive) {
+    bufferChanged = true;
+
     auto buttons = event->buttons();
     if (buttons & Qt::LeftButton) {
       cout << "Pressed @ ";

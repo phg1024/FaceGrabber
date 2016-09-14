@@ -40,11 +40,17 @@ public slots:
                       mask,
                       QRect(0, 0, mask.width(), mask.height()));
 
+    // new mask loaded
+    bufferChanged = false;
     repaint();
   }
 
   void setInteractive(bool val) {
     isInteractive = val;
+  }
+
+  bool isBufferChanged() const {
+    return bufferChanged;
   }
 
 protected:
@@ -63,6 +69,7 @@ private:
   QImage image;
   QImage buffer;
   bool isInteractive;
+  bool bufferChanged;
 
   vector<QPoint> pathPoints;
   QPen pen;
