@@ -90,15 +90,10 @@ include_directories(${CERES_INCLUDE_DIRS})
 link_libraries(${CERES_LIBRARIES})
 
 # Face shape from shading program
-add_executable(FaceGrabber_opencv facegrabber.cpp)
-target_link_libraries(FaceGrabber_opencv
+add_executable(FaceGrabber facegrabber_main.cpp facegrabber.cpp imagewidget.cpp)
+target_link_libraries(FaceGrabber
                       Qt5::Core
                       Qt5::Widgets
                       Qt5::OpenGL
                       ${MKLLIBS}
                       ${PhGLib})
-
-add_executable(FaceDetection facedetection.cpp)
-target_link_libraries(FaceDetection dlib openblas)
-
-add_subdirectory(facegrabber)
