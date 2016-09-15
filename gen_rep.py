@@ -15,7 +15,7 @@ np.set_printoptions(precision=2)
 import openface
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
-modelDir = os.path.join(fileDir, '..', 'models')
+modelDir = os.path.join(fileDir, '.', 'models')
 dlibModelDir = os.path.join(modelDir, 'dlib')
 openfaceModelDir = os.path.join(modelDir, 'openface')
 
@@ -29,6 +29,8 @@ parser.add_argument('--networkModel', type=str, help="Path to Torch network mode
 parser.add_argument('--imgDim', type=int,
                     help="Default image dimension.", default=96)
 parser.add_argument('--verbose', action='store_true')
+parser.add_argument('--image_list')
+parser.add_argument('--output_file', default='reps.txt')
 
 args = parser.parse_args()
 
@@ -79,12 +81,12 @@ def getRep(imgPath):
         print("-----\n")
     return rep
 
-reps = []
+reps = {}
 for img in args.imgs:
     print 'processing', img
     rep = getRep(img)
-    reps.append(rep)
+    reps[img] = rep
 
-with open('reps.txt', 'w') as f:
-    for r in reps:
-        f.write(' '.join([str(x) for x in r]) + '\n')
+with open(args.output_file, 'w') as f:
+    for k, v in reps.iteritems():
+        f.write('%s: %s' % (k, ' '.join([str(x) for x in v]) + '\n'))

@@ -10,17 +10,22 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'r') as f:
         img_list = [line for line in f.read().split('\n') if line]
 
+    images_dir = os.path.dirname(os.path.realpath(img_list[0]))
+    crop_images_dir = os.path.join(images_dir, 'crop')
+
     def crop_image(imgfile):
-        basename, ext = os.path.splitext(imgfile)
+        dummy, ext = os.path.splitext(imgfile)
+        basename = os.path.basename(imgfile)
         print 'processing', imgfile
+        print basename, ext
         img = cv2.imread(imgfile)
 
         with open(imgfile + '.bbox', 'r') as f:
             faces = [parse_line(line) for line in f.read().split('\n') if line]
         print faces
-        if faces:
+        for i in range(len(faces)):
             # take only the first face
-            x, y, w, h = faces[0]
+            x, y, w, h = faces[i]
             print x, y, w, h
 
             scale_factor = 2.0
@@ -81,7 +86,7 @@ if __name__ == '__main__':
             wsize = 256
             res = cv2.resize(face_region, (wsize, wsize), interpolation = cv2.INTER_CUBIC)
 
-            cv2.imwrite(basename + '_crop' + ext, res)
+            cv2.imwrite(os.path.join(crop_images_dir, basename + ('_crop_%d' % i) + ext), res)
 
     pool = multiprocessing.Pool(16)
     pool.map(crop_image, img_list)

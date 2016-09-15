@@ -78,7 +78,7 @@ if __name__ == '__main__':
             mask_out = np.where((mask==2) | (mask==0), 0, 255).astype('uint8')
             mask2 = np.where((mask==2) | (mask==0), 0, 1).astype('uint8')
 
-            # TODO set eyebrow and inner-mouth region to 0
+            # TODO exclude eyebrow region, eye region and inner-mouth region
 
             showSegmentation = False
             if showSegmentation:
