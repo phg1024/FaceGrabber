@@ -2,6 +2,7 @@ import cv2
 import sys
 import os
 import multiprocessing
+import shutil
 
 def parse_line(line):
     return [int(x) for x in line.split(',') if x]
@@ -12,6 +13,10 @@ if __name__ == '__main__':
 
     images_dir = os.path.dirname(os.path.realpath(img_list[0]))
     crop_images_dir = os.path.join(images_dir, 'crop')
+
+    if os.path.exists(crop_images_dir):
+        shutil.rmtree(crop_images_dir)
+    os.mkdir(crop_images_dir)
 
     def crop_image(imgfile):
         dummy, ext = os.path.splitext(imgfile)

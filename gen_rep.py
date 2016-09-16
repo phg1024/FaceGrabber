@@ -84,8 +84,11 @@ def getRep(imgPath):
 reps = {}
 for img in args.imgs:
     print 'processing', img
-    rep = getRep(img)
-    reps[img] = rep
+    try:
+        rep = getRep(img)
+        reps[img] = rep
+    except Exception as e:
+        print e
 
 with open(args.output_file, 'w') as f:
     for k, v in reps.iteritems():

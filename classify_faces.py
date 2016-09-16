@@ -1,55 +1,213 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+import scipy.spatial.distance as dist
 
-from sklearn.cluster import MeanShift, estimate_bandwidth
+from sklearn.cluster import MeanShift, estimate_bandwidth, AgglomerativeClustering
+from sklearn.mixture import GMM, VBGMM
+from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
+import argparse
 import sys
 import os
 import shutil
 
+parser = argparse.ArgumentParser()
+parser.add_argument('input_file', type=str)
+parser.add_argument('--method', type=str, default='scikit')
+parser.add_argument('--threshold', type=float, default=0.75)
+
+args = parser.parse_args()
+
 # read the input file
-reps = {}
-with open(sys.argv[1], 'r') as f:
+all_reps = {}
+with open(args.input_file, 'r') as f:
     lines = [line for line in f.read().split('\n') if line]
     for line in lines:
         filename, rep_str = line.split(':')
-        reps[filename] = [float(x) for x in rep_str.split()]
+        all_reps[filename] = [float(x) for x in rep_str.split()]
 
-print reps
+print all_reps
 
-X = np.array(reps.values())
+def greedy_removal(reps_in, threshold=0.9):
+    reps = reps_in.copy()
 
-ms = MeanShift()
-ms.fit(X)
-labels = ms.labels_
-cluster_centers = ms.cluster_centers_
+    THRES = threshold
+    max_dist = 10.0
 
-labels_unique = np.unique(labels)
-n_clusters = len(labels_unique)
+    outliers = []
 
-print n_clusters
+    while max_dist > THRES:
+        X = np.array(reps.values())
+        D = dist.squareform(dist.pdist(X, 'euclidean'))
+        sums = D.sum(axis=0)
+        idx = np.argmax(sums)
+        max_dist = D.sum(axis=0)[idx] / len(reps.values())
 
-main_person = labels == 0
-other_persons = labels != 0
+        print D.sum(axis=0)[idx], D.sum(), D.sum(axis=0)[idx] / len(reps.values())
 
-images_dir = os.path.dirname(os.path.realpath(reps.keys()[0]))
-main_person_dir = os.path.join(images_dir, 'main_person')
-other_persons_dir = os.path.join(images_dir, 'other_persons')
+        if max_dist < THRES:
+            break
+        else:
+            key = reps.keys()[idx]
+            #print idx, key
+            outliers.append(key)
+            reps.pop(key)
 
-if not os.path.exists(main_person_dir):
+    inliers = reps.keys()
+    print 'outliers', outliers
+    print 'inliers', inliers
+    return (inliers, outliers)
+
+if args.method == 'scikit':
+    X = np.array(all_reps.values())
+
+    if True:
+        D = dist.squareform(dist.pdist(X, 'euclidean'))
+        plt.imshow(D)
+        plt.show()
+
+    ms = MeanShift(bandwidth=0.9)
+    ms.fit(X)
+
+    labels_ms = ms.labels_
+    cluster_centers = ms.cluster_centers_
+
+    # AgglomerativeClustering
+    clustering = AgglomerativeClustering(linkage='ward')
+    clustering.fit(X)
+
+    labels = clustering.labels_
+
+    labels_unique = np.unique(labels)
+    n_clusters = len(labels_unique)
+
+    print n_clusters
+    print labels
+
+    all_mean = X.mean(axis=0)
+    main_mean = X[labels==0].mean(axis=0)
+    others_mean = X[labels!=0].mean(axis=0)
+
+    d1 = np.linalg.norm(all_mean-main_mean)
+    d2 = np.linalg.norm(all_mean-others_mean)
+
+    if d1 < d2:
+        main_person = labels == 0
+        other_persons = main_person != 1
+    else:
+        main_person = labels != 0
+        other_persons = main_person != 1
+
+    images_dir = os.path.dirname(os.path.realpath(all_reps.keys()[0]))
+    main_person_dir = os.path.join(images_dir, 'main_person')
+    other_persons_dir = os.path.join(images_dir, 'other_persons')
+
+    if os.path.exists(main_person_dir):
+        shutil.rmtree(main_person_dir)
     os.mkdir(main_person_dir)
 
-with open(images_dir + '/main_person.txt', 'w') as f:
-    for i in range(len(labels)):
-        if main_person[i]:
-            f.write(reps.keys()[i] + '\n')
-            shutil.copy(reps.keys()[i], main_person_dir)
+    with open(images_dir + '/main_person.txt', 'w') as f:
+        for i in range(len(labels)):
+            if main_person[i]:
+                f.write(all_reps.keys()[i] + '\n')
+                shutil.copy(all_reps.keys()[i], main_person_dir)
 
-if not os.path.exists(other_persons_dir):
+    if os.path.exists(other_persons_dir):
+        shutil.rmtree(other_persons_dir)
     os.mkdir(other_persons_dir)
-with open(images_dir + '/other_persons.txt', 'w') as f:
-    for i in range(len(labels)):
-        if other_persons[i]:
-            f.write(reps.keys()[i] + '\n')
-            shutil.copy(reps.keys()[i], other_persons_dir)
+    with open(images_dir + '/other_persons.txt', 'w') as f:
+        for i in range(len(labels)):
+            if other_persons[i]:
+                f.write(all_reps.keys()[i] + '\n')
+                shutil.copy(all_reps.keys()[i], other_persons_dir)
+
+
+    # plot the embeddings
+    plt.plot(X.transpose(), '-b', alpha=0.25)
+    plt.plot(X[labels==0].transpose(), '-r', alpha=0.5)
+    plt.show()
+elif args.method == 'greedy':
+    print 'Greedy removal'
+
+    inliers, outliers = greedy_removal(all_reps, args.threshold)
+
+    print len(inliers), len(outliers)
+
+    images_dir = os.path.dirname(os.path.realpath(all_reps.keys()[0]))
+    main_person_dir = os.path.join(images_dir, 'main_person')
+    other_persons_dir = os.path.join(images_dir, 'other_persons')
+
+    if os.path.exists(main_person_dir):
+        shutil.rmtree(main_person_dir)
+    os.mkdir(main_person_dir)
+
+    with open(images_dir + '/main_person.txt', 'w') as f:
+        for k in inliers:
+            f.write(k + '\n')
+            shutil.copy(k, main_person_dir)
+
+    if os.path.exists(other_persons_dir):
+        shutil.rmtree(other_persons_dir)
+    os.mkdir(other_persons_dir)
+    with open(images_dir + '/other_persons.txt', 'w') as f:
+        for k in outliers:
+            f.write(k + '\n')
+            shutil.copy(k, other_persons_dir)
+
+elif args.method == 'svm':
+    # use greedy method to find two subsets: true inliners and true outliers
+    inliers, dummy = greedy_removal(all_reps, 0.5)
+    dummy, outliers = greedy_removal(all_reps, 1.0)
+
+    print len(inliers), len(outliers), len(all_reps)
+
+    if True:
+        # train a SVM classifier with true inliners and true outliers
+        X_inliers = [all_reps[key] for key in inliers]
+        X_outliers = [all_reps[key] for key in outliers]
+        X = np.vstack((X_inliers, X_outliers))
+        y = np.hstack(([0 for key in inliers], [1 for key in outliers]))
+        #clf = svm.SVC()
+        #clf = RandomForestClassifier(n_estimators=128)
+        clf = GradientBoostingClassifier(n_estimators=128, learning_rate=1.0)
+        clf = clf.fit(X, y)
+        print X, y
+        clf.fit(X, y)
+
+        # perform classification using the SVM
+        print clf.predict(all_reps.values())
+        results = clf.predict(all_reps.values())
+
+        inliers = [all_reps.keys()[i] for i in range(len(results)) if results[i] == 0]
+        outliers = [all_reps.keys()[i] for i in range(len(results)) if results[i] == 1]
+
+        print len(inliers), len(outliers)
+
+    images_dir = os.path.dirname(os.path.realpath(all_reps.keys()[0]))
+    main_person_dir = os.path.join(images_dir, 'main_person')
+    other_persons_dir = os.path.join(images_dir, 'other_persons')
+
+    if os.path.exists(main_person_dir):
+        shutil.rmtree(main_person_dir)
+    os.mkdir(main_person_dir)
+
+    with open(images_dir + '/main_person.txt', 'w') as f:
+        for k in inliers:
+            f.write(k + '\n')
+            shutil.copy(k, main_person_dir)
+
+    if os.path.exists(other_persons_dir):
+        shutil.rmtree(other_persons_dir)
+    os.mkdir(other_persons_dir)
+    with open(images_dir + '/other_persons.txt', 'w') as f:
+        for k in outliers:
+            f.write(k + '\n')
+            shutil.copy(k, other_persons_dir)
+elif args.method == 'total_variance':
+    # find a core set of inliers
+
+    # slowly grow the set of inliers based on total variance increase
+
+    pass
