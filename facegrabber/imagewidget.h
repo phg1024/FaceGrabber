@@ -59,15 +59,25 @@ protected:
   void mouseReleaseEvent(QMouseEvent* event);
   void mouseMoveEvent(QMouseEvent* event);
   void wheelEvent(QWheelEvent* event);
+  void keyPressEvent(QKeyEvent* event);
+  void enterEvent(QEvent *event);
+  void leaveEvent(QEvent* event);
 
 private:
   void initializeBuffer();
   void initializePen();
   void paintBuffer();
+  void paintRefinementBuffer();
+  void refinePaintedRegion();
+  void flipRefinement();
+  void applyRefinement();
+  void clearBuffer(QImage &buf, QColor c = Qt::black);
 
 private:
   QImage image;
   QImage buffer;
+  QImage refinementBuffer;    // buffer used for refinement
+  QImage classificationBuffer;    // buffer used for visualizing classification
   bool isInteractive;
   bool bufferChanged;
 

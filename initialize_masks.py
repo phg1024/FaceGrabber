@@ -103,60 +103,61 @@ if __name__ == '__main__':
             mask_out = np.where((mask==2) | (mask==0), 0, 255).astype('uint8')
             mask2 = np.where((mask==2) | (mask==0), 0, 1).astype('uint8')
 
-            # now use mask2 to perform classification with SVM
-            # assemble data using all pixels in img
-            pos_pixels = []
-            neg_pixels = []
-            width, height, depth = img.shape
-            print width, height, depth
+            if False:
+                # now use mask2 to perform classification with SVM
+                # assemble data using all pixels in img
+                pos_pixels = []
+                neg_pixels = []
+                width, height, depth = img.shape
+                print width, height, depth
 
-            #print mask2
-            #print img
+                #print mask2
+                #print img
 
-            wsize = 4
-            for h in range(wsize, height-wsize):
-                for w in range(wsize, width-wsize):
-                    feat_vec = []
-                    for y in range(-wsize, wsize+1):
-                        for x in range(-wsize, wsize+1):
-                            feat_vec.append(img[h][w])
-                    feat_vec = np.array(feat_vec)
-                    if mask2[h][w]:
-                        pos_pixels.append(feat_vec.flatten())
-                    else:
-                        neg_pixels.append(feat_vec.flatten())
-            pos_pixels = np.array(pos_pixels)
-            neg_pixels = np.array(neg_pixels)
-            print pos_pixels.shape, neg_pixels.shape
+                wsize = 4
+                for h in range(wsize, height-wsize):
+                    for w in range(wsize, width-wsize):
+                        feat_vec = []
+                        for y in range(-wsize, wsize+1):
+                            for x in range(-wsize, wsize+1):
+                                feat_vec.append(img[h][w])
+                        feat_vec = np.array(feat_vec)
+                        if mask2[h][w]:
+                            pos_pixels.append(feat_vec.flatten())
+                        else:
+                            neg_pixels.append(feat_vec.flatten())
+                pos_pixels = np.array(pos_pixels)
+                neg_pixels = np.array(neg_pixels)
+                print pos_pixels.shape, neg_pixels.shape
 
-            # train SVM
-            X = np.vstack((pos_pixels, neg_pixels))
-            y = np.hstack(([1 for x in range(len(pos_pixels))],
-                           [0 for x in range(len(neg_pixels))]))
-            print 'data prepared'
-            print 'training Classifier ...'
-            #clf = svm.SVC()
-            #clf = GMM(n_components=5)
-            #clf = SGDClassifier(loss="hinge", penalty="l2")
-            #clf = RandomForestClassifier(n_estimators=128)
-            clf = GradientBoostingClassifier(n_estimators=32, learning_rate=1.0)
-            clf.fit(X, y)
-            print 'done'
+                # train SVM
+                X = np.vstack((pos_pixels, neg_pixels))
+                y = np.hstack(([1 for x in range(len(pos_pixels))],
+                               [0 for x in range(len(neg_pixels))]))
+                print 'data prepared'
+                print 'training Classifier ...'
+                #clf = svm.SVC()
+                #clf = GMM(n_components=5)
+                #clf = SGDClassifier(loss="hinge", penalty="l2")
+                #clf = RandomForestClassifier(n_estimators=128)
+                clf = GradientBoostingClassifier(n_estimators=32, learning_rate=1.0)
+                clf.fit(X, y)
+                print 'done'
 
-            mask3 = np.zeros(img.shape[:2], np.uint8)
-            for h in range(wsize, height-wsize):
-                for w in range(wsize, width-wsize):
-                    feat_vec = []
-                    for y in range(-wsize, wsize+1):
-                        for x in range(-wsize, wsize+1):
-                            feat_vec.append(img[h][w])
+                mask3 = np.zeros(img.shape[:2], np.uint8)
+                for h in range(wsize, height-wsize):
+                    for w in range(wsize, width-wsize):
+                        feat_vec = []
+                        for y in range(-wsize, wsize+1):
+                            for x in range(-wsize, wsize+1):
+                                feat_vec.append(img[h][w])
 
-                    feat_vec = np.array(feat_vec)
-                    good = clf.predict(feat_vec.flatten())
-                    if good:
-                        mask3[h][w] = 255
-                    else:
-                        mask3[h][w] = 0
+                        feat_vec = np.array(feat_vec)
+                        good = clf.predict(feat_vec.flatten())
+                        if good:
+                            mask3[h][w] = 255
+                        else:
+                            mask3[h][w] = 0
 
             showSegmentation = False
             if showSegmentation:
@@ -166,7 +167,7 @@ if __name__ == '__main__':
             basename, ext = os.path.splitext(imgfile)
 
             cv2.imwrite(basename + '_mask0' + ext, mask_out)
-            cv2.imwrite(basename + '_mask3' + ext, mask3)
+            #cv2.imwrite(basename + '_mask3' + ext, mask3)
             #cv2.imwrite('mask.png', mask_out)
 
             return True
