@@ -7,6 +7,7 @@ from sklearn.cluster import MeanShift, estimate_bandwidth, AgglomerativeClusteri
 from sklearn.mixture import GMM, VBGMM
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn import linear_model
 
 import argparse
 import sys
@@ -205,9 +206,82 @@ elif args.method == 'svm':
         for k in outliers:
             f.write(k + '\n')
             shutil.copy(k, other_persons_dir)
+
 elif args.method == 'total_variance':
-    # find a core set of inliers
+    # use greedy method to find two subsets: true inliners and true outliers
+    inliers, dummy = greedy_removal(all_reps, 0.5)
+    dummy, outliers = greedy_removal(all_reps, 1.0)
+
+    X_inliers = [all_reps[key] for key in inliers]
+    X_outliers = [all_reps[key] for key in outliers]
+    X = np.vstack((X_inliers, X_outliers))
+    y = np.hstack(([0 for key in inliers], [1 for key in outliers]))
+
+    # fit a GMM classifier
+    clf = GMM(n_components=1)
+    print clf.fit(X_inliers)
 
     # slowly grow the set of inliers based on total variance increase
+    all_scores = clf.score(all_reps.values())
+    idx_scores = [(i, all_scores[i]) for i in range(len(all_scores))]
+    sorted_scores = sorted(idx_scores, key=lambda x: x[1])
+    print sorted_scores
+    print 'median', sorted_scores[int(len(sorted_scores)/2)]
 
-    pass
+    # fit a line to the sorted scores
+    N_line = len(sorted_scores)
+    #print N_line
+    y_line = np.array([y for x, y in sorted_scores]).reshape((-1, 1))
+    x_line = np.array(range(len(y_line))).reshape((-1, 1))
+    #print x_line[int(N_line/2):], y_line[int(N_line/2):]
+
+    regr = linear_model.LinearRegression()
+    regr.fit(x_line[int(N_line/2):], y_line[int(N_line/2):])
+    print 'coeff', regr.coef_
+
+    error_line = y_line - regr.predict(x_line)
+    print error_line.reshape((1, -1))
+    good = np.abs(error_line) < args.threshold
+
+    print [sorted_scores[i][0] for i in range(len(good)) if good[i]]
+    print [sorted_scores[i][0] for i in range(len(good)) if not good[i]]
+    inliers = [all_reps.keys()[sorted_scores[i][0]] for i in range(len(good)) if good[i]]
+    outliers = [all_reps.keys()[sorted_scores[i][0]] for i in range(len(good)) if not good[i]]
+
+    print len(inliers), len(outliers)
+
+    if False:
+        # take the highest half
+        high_scores = sorted_scores[int(len(sorted_scores)/2):]
+
+        # compute mean and variance
+        mean_high_score = np.array([y for x,y in high_scores]).mean()
+        var_high_score = np.std(np.array([y for x, y in high_scores]))
+        print 'mean', mean_high_score, 'std', var_high_score
+        print 'threshold', mean_high_score - 5.0 * var_high_score
+        good = clf.score(all_reps.values()) > mean_high_score - 5.0 * var_high_score
+        print good
+
+        inliers = [all_reps.keys()[i] for i in range(len(good)) if good[i]]
+        outliers = [all_reps.keys()[i] for i in range(len(good)) if not good[i]]
+
+    images_dir = os.path.dirname(os.path.realpath(all_reps.keys()[0]))
+    main_person_dir = os.path.join(images_dir, 'main_person')
+    other_persons_dir = os.path.join(images_dir, 'other_persons')
+
+    if os.path.exists(main_person_dir):
+        shutil.rmtree(main_person_dir)
+    os.mkdir(main_person_dir)
+
+    with open(images_dir + '/main_person.txt', 'w') as f:
+        for k in inliers:
+            f.write(k + '\n')
+            shutil.copy(k, main_person_dir)
+
+    if os.path.exists(other_persons_dir):
+        shutil.rmtree(other_persons_dir)
+    os.mkdir(other_persons_dir)
+    with open(images_dir + '/other_persons.txt', 'w') as f:
+        for k in outliers:
+            f.write(k + '\n')
+            shutil.copy(k, other_persons_dir)

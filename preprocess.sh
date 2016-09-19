@@ -1,5 +1,6 @@
 image_directory=$1
 person_name=$2
+strict_mode=$3
 
 ### Creating image list
 python create_image_list.py $image_directory $person_name.txt
@@ -17,4 +18,8 @@ python create_image_list.py $1crop "$person_name"_crop.txt
 python gen_rep.py `cat "$person_name"_crop.txt` --output_file "$person_name"_reps.txt
 
 ### Classify faces
-python classify_faces.py "$person_name"_reps.txt --method greedy --threshold 0.9
+if [ "$strict_mode" == "yes" ]; then
+  python classify_faces.py "$person_name"_reps.txt --method total_variance --threshold 10
+else
+  python classify_faces.py "$person_name"_reps.txt --method total_variance --threshold 50
+fi
