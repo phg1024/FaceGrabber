@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.mixture import GMM, VBGMM
 from sklearn.linear_model import SGDClassifier
 
+import argparse
 import cv2
 import sys
 import os
@@ -16,8 +17,13 @@ from matplotlib import pyplot as plt
 
 from face_detector import create_detector, detect_face
 
+parser = argparse.ArgumentParser()
+parser.add_argument('input_file', type=str)
+
+args = parser.parse_args()
+
 if __name__ == '__main__':
-    with open(sys.argv[1], 'r') as f:
+    with open(args.input_file, 'r') as f:
         img_list = [line for line in f.read().split('\n') if line]
 
     detector = create_detector()
