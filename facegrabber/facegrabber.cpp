@@ -101,13 +101,13 @@ void FaceGrabber::saveCurrentMask() {
     QString path = info.path();
     cout << path.toStdString() << endl;
     cout << info.baseName().toStdString() << endl;
-    QString maskFilename = info.baseName() + "_mask0." + info.suffix();
+    QString maskFilename = "mask" + info.baseName() + ".png";
     cout << maskFilename.toStdString() << endl;
 
-    QImage mask(path + "/" + maskFilename);
+    QImage mask(path + "/masked/" + maskFilename);
 
     QImage newMask = operWidget->getMask().scaled(mask.width(), mask.height(), Qt::KeepAspectRatio);
-    newMask.save(path + "/" + maskFilename);
+    newMask.save(path + "/masked/" + maskFilename);
   }
 }
 
@@ -119,10 +119,10 @@ void FaceGrabber::setCurrentImage(int idx)
   QString path = info.path();
   cout << path.toStdString() << endl;
   cout << info.baseName().toStdString() << endl;
-  QString maskFilename = info.baseName() + "_mask0." + info.suffix();
+  QString maskFilename = "mask" + info.baseName() + ".png";
   cout << maskFilename.toStdString() << endl;
 
-  QImage mask(path + "/" + maskFilename);
+  QImage mask(path + "/masked/" + maskFilename);
 
   imgWidget->bindImage(img);
   operWidget->bindImage(img);
