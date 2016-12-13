@@ -63,6 +63,7 @@ if __name__ == '__main__':
             cv2.circle(img, tuple(np.round([xi-1, yi-1]).astype('int32')), 2, (0,255,0), -1)
 
         cv2.imwrite(os.path.join(points_images_dir, imgfile), img)
+        #print 'done.'
 
         return True
 

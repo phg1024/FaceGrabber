@@ -43,23 +43,16 @@ if (GLEW_FOUND)
     link_libraries(${GLEW_LIBRARIES})
 endif()
 
-# GLI
-find_package(GLI REQUIRED)
-if (GLI_FOUND)
-    message([] ${GLI_INCLUDE_DIRS})
-    include_directories(${GLI_INCLUDE_DIRS})
-endif()
-
 # Eigen
-set(EIGEN_INCLUDE_DIR /usr/include/eigen3)
+find_package(Eigen)
 include_directories(${EIGEN_INCLUDE_DIR})
 
 # MKL
-set(MKL_INCLUDE_DIRS "/home/phg/SDKs/intel/composer_xe/include")
+set(MKL_INCLUDE_DIRS "/opt/intel/mkl/include")
 message([] ${MKL_INCLUDE_DIRS} )
 include_directories(${MKL_INCLUDE_DIRS})
-set(MKLROOT "/home/phg/SDKs/intel/composer_xe_2015/mkl")
-set(MKLLIBS_DIRS "${MKLROOT}/lib/intel64/")
+set(MKLROOT "/opt/intel/mkl")
+set(MKLLIBS_DIRS "${MKLROOT}/lib/intel64/" "/opt/intel/lib/intel64_lin")
 link_directories(${MKLLIBS_DIRS})
 set(MKLLIBS "-Wl,--start-group -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -Wl,--end-group -liomp5 -ldl -lpthread -lm")
 
@@ -77,12 +70,11 @@ find_package(Qt5OpenGL)
 find_package(dlib)
 
 # CUDA
-find_package(CUDA)
-set(CUDNN_INC /home/phg/SDKs/cudnn-5.1/include)
-set(CUDNN_LIB_PATH /home/phg/SDKs/cudnn-5.1/lib64)
-include_directories(${CUDNN_INC})
-link_directories(${CUDNN_LIB_PATH})
-link_libraries("-lcudnn")
+find_package(CUDA REQUIRED)
+if (CUDA_FOUND)
+message("-- ${CUDA_INCLUDE_DIRS}")
+message("-- ${CUDA_LIBRARIES}")
+endif()
 
 # Ceres solver
 find_package(Ceres REQUIRED)
@@ -99,6 +91,6 @@ target_link_libraries(FaceGrabber_opencv
                       ${PhGLib})
 
 add_executable(FaceDetection facedetection.cpp)
-target_link_libraries(FaceDetection dlib openblas)
+target_link_libraries(FaceDetection dlib ${MKLLIBS})
 
 add_subdirectory(facegrabber)
