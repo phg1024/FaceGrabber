@@ -6,13 +6,15 @@ strict_mode=$3
 python create_image_list.py $image_directory $person_name.txt
 
 ### Detect faces in images
-python face_detector.py $person_name.txt
+/usr/bin/python face_detector.py $person_name.txt
 
-### Crop face images
-python crop_images.py $person_name.txt
+### Cut faces
+./cut_faces.sh $image_directory
 
 ### Create image list for cropped images
-python create_image_list.py $1crop "$person_name"_crop.txt
+python create_image_list.py $1/crop "$person_name"_crop.txt
+
+exit 0
 
 ### Generate face embedding
 python gen_rep.py `cat "$person_name"_crop.txt` --output_file "$person_name"_reps.txt

@@ -61,9 +61,14 @@ if __name__ == '__main__':
                 for p in pts:
                     cv2.circle(masked_img, tuple(np.round(p-1.0).astype('int32')), 2, (0,255,0))
                 plt.imshow(masked_img)
-                for simplex in hull.simplices:
-                    plt.plot(pts[simplex, 0], pts[simplex, 1], 'b-')
+                #for simplex in hull.simplices:
+                #    plt.plot(pts[simplex, 0], pts[simplex, 1], 'b-')
                 plt.show()
+            with open('%s.pts' % imgfile, 'w') as f:
+                for p in pts:
+                    print p
+                    f.write('%d %d\n' % (p[0], p[1]))
+                return True
 
             mask = np.zeros(img.shape[:2], np.uint8)
             bgdModel = np.zeros((1, 65), np.float64)
