@@ -3,6 +3,8 @@ import sys
 import os
 import multiprocessing
 import shutil
+import threading
+import math
 
 def parse_line(line):
     return [int(x) for x in line.split(',') if x]
@@ -63,24 +65,29 @@ if __name__ == '__main__':
         print 'processing', imgfile
         print basename, ext
 
-        img = cv2.imread(imgfile)
+        try:
+            print 'reading', imgfile
+            img = cv2.imread(imgfile)
+            print 'done'
 
-        with open(imgfile + '.bbox', 'r') as f:
-            faces = [parse_line(line) for line in f.read().split('\n') if line]
-        print faces
+            with open(imgfile + '.bbox', 'r') as f:
+                faces = [parse_line(line) for line in f.read().split('\n') if line]
+            print faces
+        except:
+            return True
 
-        pts_file = dummy + '.pts'
-        if not os.path.exists(pts_file):
-            return None
-        pts = read_points(pts_file)
+        #pts_file = dummy + '.pts'
+        #if not os.path.exists(pts_file):
+        #    return None
+        #pts = read_points(pts_file)
 
         for i in range(len(faces)):
             # take only the first face
             x, y, w, h = faces[i]
             print x, y, w, h
 
-            if not is_good_box(faces[i], pts):
-                continue
+            #if not is_good_box(faces[i], pts):
+            #    continue
 
             scale_factor = 2.0
 
@@ -89,7 +96,7 @@ if __name__ == '__main__':
             print x0, y0
 
             half_w = scale_factor * 0.5 * w
-            half_h = half_w #scale_factor * 0.5 * h
+            half_h = scale_factor * 0.5 * h
 
             # face region corners
             left = int(x0 - half_w)
@@ -139,20 +146,53 @@ if __name__ == '__main__':
             face_region = padded_img[top-top_shift:bottom-top_shift, left-left_shift:right-left_shift]
 
             # scale the cropped image
-            if len(sys.argv)>2:
-                wsize = int(sys.argv[2])
-            else:
-                wsize = 250
+            wsize = 250
             res = cv2.resize(face_region, (wsize, wsize), interpolation = cv2.INTER_CUBIC)
 
             cv2.imwrite(os.path.join(crop_images_dir, basename), res)
 
-            transformed_pts = transform_points(new_box, pts, wsize)
-            image_file_name, ext = os.path.splitext(basename)
-            transformed_pts_file = os.path.join(crop_images_dir, image_file_name+'.pts')
-            with open(transformed_pts_file, 'w') as f:
-                f.write(str(len(transformed_pts) / 2) + '\n')
-                f.write(' '.join(map(str, transformed_pts)) + '\n')
+            #transformed_pts = transform_points(new_box, pts, wsize)
+            #image_file_name, ext = os.path.splitext(basename)
+            #transformed_pts_file = os.path.join(crop_images_dir, image_file_name+'.pts')
+            #with open(transformed_pts_file, 'w') as f:
+            #    f.write(str(len(transformed_pts) / 2) + '\n')
+            #    f.write(' '.join(map(str, transformed_pts)) + '\n')
+        return True
 
-    pool = multiprocessing.Pool(16)
-    pool.map(crop_image, img_list)
+    def run_with_limited_time(func, args, kwargs, time):
+        """Runs a function with time limit
+
+        :param func: The function to run
+        :param args: The functions args, given as tuple
+        :param kwargs: The functions keywords, given as dict
+        :param time: The time limit in seconds
+        :return: True if the function ended successfully. False if it was terminated.
+        """
+        p = threading.Thread(target=func, args=args, kwargs=kwargs)
+        p.start()
+        p.join(time)
+        if p.is_alive():
+            p.terminate()
+            return False
+
+        return True
+
+    def batch_worker(imgfiles):
+        for imgfile in imgfiles:
+            crop_image(imgfile)
+
+    N = len(img_list)
+    num_workers = 16
+    batch_size = math.ceil(N / float(num_workers))
+
+    threads = []
+    for i in range(num_workers):
+        i0 = int(i * batch_size)
+        i1 = int(min((i+1) * batch_size, N))
+        t = threading.Thread(target=batch_worker, args=(img_list[i0:i1], ))
+        t.daemon = True
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join(30)

@@ -37,18 +37,22 @@ if __name__ == '__main__':
         img_list = [line for line in f.read().split('\n') if line]
 
     def proc_image(imgfile):
-        print 'processing', imgfile
-        img = cv2.imread(imgfile, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        faces, dummy = detect_face(img, face_detector)
-        print faces
-        if faces is not None:
-            with open(imgfile+'.bbox', 'w') as f:
-                for face in faces:
-                    f.write(','.join([str(v) for v in face]) + '\n')
-            return True
-        else:
-            print 'No face detected.'
-            return False
+        try:
+            print 'processing', imgfile
+            img = cv2.imread(imgfile, cv2.IMREAD_GRAYSCALE)
+            faces, dummy = detect_face(img, face_detector)
+            print faces
+            if faces is not None:
+                with open(imgfile+'.bbox', 'w') as f:
+                    for face in faces:
+                        f.write(','.join([str(v) for v in face]) + '\n')
+                return True
+            else:
+                print 'No face detected.'
+                return False
+        except Exception as e:
+            print 'Failed:', e
+            return None
 
     pool = multiprocessing.Pool(6)
     pool.map(proc_image, img_list)

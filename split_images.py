@@ -22,7 +22,7 @@ os.mkdir(args.dest)
 num_splits = int(math.ceil(len(lines) / float(args.size)))
 
 for i in range(num_splits):
-    print 'processing split %d' % i
+    print 'processing split %d/%d' % (i, num_splits)
     lines_i = lines[i*args.size:(i+1)*args.size]
 
     split_dir = os.path.join(args.dest, 'split_%04d' % i)

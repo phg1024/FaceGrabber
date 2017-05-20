@@ -22,9 +22,17 @@ parser.add_argument('input_file', type=str)
 
 args = parser.parse_args()
 
+def safe_create(dirname):
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+
 if __name__ == '__main__':
     with open(args.input_file, 'r') as f:
         img_list = [line for line in f.read().split('\n') if line]
+
+    img_dir = os.path.dirname(args.input_file)
+    #safe_create(os.path.join(img_dir, 'masks'))
+    #safe_create(os.path.join(img_dir, 'masked'))
 
     detector = create_detector()
     predictor = dlib.shape_predictor('./shape_predictor_68_face_landmarks.dat')
@@ -36,7 +44,7 @@ if __name__ == '__main__':
 
         if faces is not None and faces:
             img = cv2.imread(imgfile)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
             shape = predictor(skimage.io.imread(imgfile), dets[0])
             parts = [shape.part(i) for i in range(shape.num_parts)]
@@ -64,11 +72,13 @@ if __name__ == '__main__':
                 #for simplex in hull.simplices:
                 #    plt.plot(pts[simplex, 0], pts[simplex, 1], 'b-')
                 plt.show()
-            with open('%s.pts' % imgfile, 'w') as f:
-                for p in pts:
-                    print p
-                    f.write('%d %d\n' % (p[0], p[1]))
-                return True
+            outputPoints = False
+            if outputPoints:
+                with open('%s.pts' % imgfile, 'w') as f:
+                    for p in pts:
+                        print p
+                        f.write('%d %d\n' % (p[0], p[1]))
+                    return True
 
             mask = np.zeros(img.shape[:2], np.uint8)
             bgdModel = np.zeros((1, 65), np.float64)
@@ -100,7 +110,7 @@ if __name__ == '__main__':
                 # cut out eyes and mouth
                 left_eye = range(36, 42)
                 right_eye = range(42, 48)
-                mouth = range(48, 60)
+                mouth = range(60, 68)
 
                 left_eye_pts = np.array([pts[v] for v in left_eye]).astype('int32')
                 right_eye_pts = np.array([pts[v] for v in right_eye]).astype('int32')
@@ -176,8 +186,22 @@ if __name__ == '__main__':
                 plt.imshow(masked_img),plt.title('Using face detector'),plt.show()
 
             basename, ext = os.path.splitext(imgfile)
+            img_filename = os.path.basename(imgfile)
+            img_dir = os.path.dirname(imgfile)
 
-            cv2.imwrite(basename + '_mask0' + ext, mask_out)
+            masked_idx = (mask_out==0)
+            masked_out = img
+            masked_out[masked_idx] = 0
+
+            print '%s/masks/%s' % (img_dir, img_filename)
+            print '%s/masked/%s' % (img_dir, img_filename)
+
+            safe_create(os.path.join(img_dir, 'masks'))
+            safe_create(os.path.join(img_dir, 'masked'))
+
+            cv2.imwrite('%s/masks/%s' % (img_dir, img_filename), mask_out)
+            cv2.imwrite('%s/masked/%s' % (img_dir, img_filename), masked_out)
+
             #cv2.imwrite(basename + '_mask3' + ext, mask3)
             #cv2.imwrite('mask.png', mask_out)
 
